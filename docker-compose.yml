@@ -1,0 +1,10 @@
+services:
+  classifier:
+    build: ./app
+    volumes:
+      - ./input:/data/input
+      - ./output:/data/output
+      - ./results:/data/results
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    command: python classifier.py
