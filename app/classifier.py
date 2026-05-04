@@ -65,11 +65,28 @@ def extract_snippet(path: Path, max_chars: int = 600) -> str:
         if ext == ".txt":
             return path.read_text(errors="ignore")[:max_chars]
 
-        if ext in (".doc", ".docx"):
+        if ext == ".docx":
             from docx import Document
             doc = Document(str(path))
             text = "\n".join(p.text for p in doc.paragraphs)
             return text[:max_chars]
+
+        if ext == ".doc":
+            # .doc es formato binario antiguo — python-docx no lo lee.
+            # Convertimos a .docx con LibreOffice y luego lo leemos.
+            import subprocess, tempfile
+            with tempfile.TemporaryDirectory() as tmpdir:
+                subprocess.run(
+                    ["soffice", "--headless", "--convert-to", "docx",
+                     "--outdir", tmpdir, str(path)],
+                    capture_output=True, timeout=30
+                )
+                converted = Path(tmpdir) / path.with_suffix(".docx").name
+                if converted.exists():
+                    from docx import Document
+                    doc = Document(str(converted))
+                    text = "\n".join(p.text for p in doc.paragraphs)
+                    return text[:max_chars]
 
         if ext == ".odt":
             from odf.opendocument import load
